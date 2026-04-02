@@ -8,12 +8,10 @@ def export_to_excel(original_df, labels, profiles, llm_result, selected_features
     output = io.BytesIO()
 
     with pd.ExcelWriter(output, engine="xlsxwriter") as writer:
-        # 1. Ham veri + segment etiketi
         result_df = original_df.copy()
         result_df["Segment"] = labels
         result_df.to_excel(writer, sheet_name="Veri ve Segmentler", index=False)
 
-        # 2. Segment profilleri
         profile_rows = []
         for cid, p in profiles.items():
             row = {"Segment": cid, "Kayit Sayisi": p["size"], "Yuzde": p["percentage"]}
@@ -29,7 +27,6 @@ def export_to_excel(original_df, labels, profiles, llm_result, selected_features
 
         pd.DataFrame(profile_rows).to_excel(writer, sheet_name="Segment Profilleri", index=False)
 
-        # 3. LLM yorumlari
         if llm_result and "segments" in llm_result:
             llm_rows = []
             for seg in llm_result["segments"]:
@@ -44,7 +41,6 @@ def export_to_excel(original_df, labels, profiles, llm_result, selected_features
                 })
             pd.DataFrame(llm_rows).to_excel(writer, sheet_name="LLM Yorumlari", index=False)
 
-            # 4. Yonetici ozeti
             summary_df = pd.DataFrame([{
                 "Yonetici Ozeti": llm_result.get("executive_summary", ""),
                 "Segmentler Arasi Icguruler": " | ".join(llm_result.get("cross_segment_insights", [])),
