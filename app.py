@@ -18,11 +18,11 @@ from exporter import export_to_excel, export_to_json
 # --- Sayfa ayarları ---
 st.set_page_config(
     page_title="Segment Intelligence Agent",
-    page_icon="🧠",
+    page_icon="",
     layout="wide",
 )
 
-st.title("🧠 Segment Intelligence Agent")
+st.title("Segment Intelligence Agent")
 st.caption("Verinizi yükleyin, segmentleri keşfedelim, yapay zekâ ile yorumlayalım.")
 
 # --- Session state başlangıç ---
