@@ -4,7 +4,6 @@ import pandas as pd
 
 
 def export_to_excel(original_df, labels, profiles, llm_result, selected_features):
-    """Analiz sonuclarini Excel dosyasina aktarir."""
     output = io.BytesIO()
 
     with pd.ExcelWriter(output, engine="xlsxwriter") as writer:
@@ -52,7 +51,6 @@ def export_to_excel(original_df, labels, profiles, llm_result, selected_features
 
 
 def export_to_json(profiles, llm_result):
-    """Analiz sonuclarini JSON formatinda aktarir."""
     export_data = {
         "profiles": {},
         "llm_interpretation": llm_result,

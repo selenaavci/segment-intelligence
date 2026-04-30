@@ -5,7 +5,6 @@ from sklearn.metrics import silhouette_score
 
 
 def find_optimal_k(data, k_range=(2, 10)):
-    """Silhouette score ile optimal cluster sayisini bulur."""
     k_min, k_max = k_range
     k_max = min(k_max, len(data) - 1)
 
@@ -22,7 +21,6 @@ def find_optimal_k(data, k_range=(2, 10)):
 
 
 def run_clustering(data, n_clusters):
-    """K-Means clustering calistirir."""
     kmeans = KMeans(n_clusters=n_clusters, random_state=42, n_init=10)
     labels = kmeans.fit_predict(data)
     score = silhouette_score(data, labels)
@@ -30,12 +28,10 @@ def run_clustering(data, n_clusters):
 
 
 def generate_cluster_profiles(original_df, selected_features, labels):
-    """Her cluster icin profil istatistikleri cikarir."""
     df = original_df[selected_features].copy()
     df["Cluster"] = labels
 
     profiles = {}
-    overall_stats = df[selected_features].describe()
 
     for cluster_id in sorted(df["Cluster"].unique()):
         cluster_data = df[df["Cluster"] == cluster_id]
@@ -63,7 +59,6 @@ def generate_cluster_profiles(original_df, selected_features, labels):
                 "diff_from_overall_pct": round(diff_pct, 1),
             }
 
-
             if overall_std > 0 and abs(cluster_mean - overall_mean) > 0.5 * overall_std:
                 direction = "yuksek" if cluster_mean > overall_mean else "dusuk"
                 profile["distinguishing_features"].append(
@@ -85,27 +80,26 @@ def generate_cluster_profiles(original_df, selected_features, labels):
 
 
 def prepare_llm_summary(profiles, selected_features):
-    """LLM'ye gonderilecek ozet bilgiyi hazirlar."""
     summary_parts = []
-    summary_parts.append(f"Analiz edilen özellikler: {', '.join(selected_features)}")
-    summary_parts.append(f"Toplam segment sayısı: {len(profiles)}")
+    summary_parts.append(f"Analiz edilen ozellikler: {', '.join(selected_features)}")
+    summary_parts.append(f"Toplam segment sayisi: {len(profiles)}")
     summary_parts.append("")
 
     for cluster_id, profile in profiles.items():
         part = f"--- Segment {cluster_id} ---\n"
-        part += f"Büyüklük: {profile['size']} kayıt (%{profile['percentage']})\n"
+        part += f"Buyukluk: {profile['size']} kayit (%{profile['percentage']})\n"
 
         if profile["distinguishing_features"]:
-            part += "Ayırt edici özellikler:\n"
+            part += "Ayirt edici ozellikler:\n"
             for feat in profile["distinguishing_features"]:
                 part += f"  - {feat}\n"
 
-        part += "İstatistikler:\n"
+        part += "Istatistikler:\n"
         for col, stats in profile["stats"].items():
             if "mean" in stats:
                 part += f"  {col}: ortalama={stats['mean']}, genel ortalama={stats['overall_mean']}, fark=%{stats['diff_from_overall_pct']}\n"
             elif "top_values" in stats:
-                part += f"  {col}: en sık={stats.get('dominant_value', 'N/A')} (%{stats.get('dominant_pct', 0)})\n"
+                part += f"  {col}: en sik={stats.get('dominant_value', 'N/A')} (%{stats.get('dominant_pct', 0)})\n"
 
         summary_parts.append(part)
 

@@ -1,23 +1,10 @@
 import json
+
+import requests
 import streamlit as st
-from openai import OpenAI
 
 
-def get_client():
-    """Streamlit secrets'tan OpenRouter bilgilerini alarak client oluşturur."""
-    api_key = st.secrets.get("LLM_API_KEY")
-    base_url = st.secrets.get("LLM_BASE_URL")
-    if not api_key or not base_url:
-        raise ValueError("LLM_API_KEY ve LLM_BASE_URL Streamlit Secrets'ta tanımlı değil.")
-    return OpenAI(api_key=api_key, base_url=base_url)
-
-
-def interpret_segments(cluster_summary, context=""):
-    """LLM ile segment yorumlama yapar."""
-    client = get_client()
-    model = st.secrets.get("LLM_MODEL", "openrouter/free")
-
-    system_prompt = """Sen bir veri analisti ve iş zekâsı uzmanısın.
+SYSTEM_PROMPT = """Sen bir veri analisti ve iş zekâsı uzmanısın.
 Clustering (segmentasyon) sonuçlarını yorumlaman isteniyor.
 
 Görevlerin:
@@ -45,25 +32,58 @@ Görevlerin:
   "cross_segment_insights": ["segmentler arası içgörü 1", "içgörü 2"]
 }"""
 
-    user_message = f"""Aşağıdaki clustering sonuçlarını yorumla:
 
-{cluster_summary}"""
+def _secret(key: str) -> str:
+    try:
+        return st.secrets.get(key, "") if hasattr(st, "secrets") else ""
+    except Exception:
+        return ""
 
+
+def interpret_segments(cluster_summary, context=""):
+    base_url = _secret("LLM_BASE_URL").strip().rstrip("/")
+    model = _secret("LLM_MODEL").strip()
+    api_key = _secret("LLM_API_KEY").strip()
+
+    if not base_url or not model:
+        return {
+            "raw_response": (
+                "⚠️ **LLM bilgileri eksik.**\n\n"
+                "Yapay zekâ yorumunu etkinleştirmek için `LLM_API_KEY`, "
+                "`LLM_BASE_URL` ve `LLM_MODEL` alanlarını Streamlit Cloud → "
+                "**Settings → Secrets** bölümüne ya da yerelde "
+                "`.streamlit/secrets.toml` dosyasına ekleyin.\n\n"
+                f"Kümeleme özeti LLM'e gönderilmeye hazır ({len(cluster_summary)} karakter)."
+            )
+        }
+
+    user_message = f"Aşağıdaki clustering sonuçlarını yorumla:\n\n{cluster_summary}"
     if context:
         user_message += f"\n\nEk bağlamsal bilgi: {context}"
 
-    response = client.chat.completions.create(
-        model=model,
-        max_tokens=4096,
-        messages=[
-            {"role": "system", "content": system_prompt},
+    headers = {"Content-Type": "application/json"}
+    if api_key:
+        headers["Authorization"] = f"Bearer {api_key}"
+
+    payload = {
+        "model": model,
+        "messages": [
+            {"role": "system", "content": SYSTEM_PROMPT},
             {"role": "user", "content": user_message},
         ],
+        "max_tokens": 4096,
+        "temperature": 0.7,
+    }
+
+    response = requests.post(
+        f"{base_url}/v1/chat/completions",
+        json=payload,
+        headers=headers,
+        timeout=120,
     )
+    response.raise_for_status()
+    response_text = response.json()["choices"][0]["message"]["content"]
 
-    response_text = response.choices[0].message.content
-
-    # JSON parse
     try:
         if "```json" in response_text:
             json_str = response_text.split("```json")[1].split("```")[0].strip()

@@ -1,9 +1,11 @@
 # 🧠 Segment Intelligence Agent
 
 ## Project Overview  
-Segment Intelligence Agent, kullanıcı tarafından yüklenen veri setleri üzerinde **otomatik segmentasyon (clustering)** yaparak, ortaya çıkan grupları **iş birimi tarafından anlaşılabilir içgörülere ve aksiyon önerilerine dönüştüren** bir AI destekli analiz modülüdür.  
+Segment Intelligence Agent, kullanıcı tarafından yüklenen veri setleri üzerinde **otomatik segmentasyon (clustering)** yaparak, ortaya çıkan grupları **iş birimi tarafından anlaşılabilir içgörülere dönüştürmek üzere tasarlanmış** bir analiz modülüdür.
 
-Bu agent, klasik makine öğrenmesi algoritmaları ile elde edilen teknik çıktıları, LLM destekli yorumlama katmanı ile zenginleştirerek **profil çıkarımı, davranış analizi ve karar destek** süreçlerinde kullanılabilir hale getirir.  
+Klasik makine öğrenmesi (K-Means) ile cluster'lar oluşturulur ve her cluster için özet istatistikler, ayırt edici özellikler ve genel popülasyondan farklar çıkarılır. Sonuçlar isteğe bağlı bir LLM yorumlama katmanına gönderilmek üzere hazırlanır.
+
+> ⚠️ **LLM entegrasyonu şu an aktif değildir.** `llm_interpreter.py` vLLM uyumlu bir HTTP çağrısı içerir ancak kod yorum satırında bırakılmıştır. Bağlantı aktifleştirilene kadar UI'da placeholder mesaj gösterilir ve cluster özeti LLM'e gönderilmeye hazır halde tutulur.
 
 ---
 
@@ -36,7 +38,7 @@ Teknik clustering çıktılarının ötesine geçerek, her segment için **profi
 ## ⚙️ End-to-End Workflow  
 
 1. **Data Upload**  
-   Kullanıcı CSV veya Excel veri setini yükler.  
+   Kullanıcı CSV veya Excel (XLSX/XLS) veri setini yükler.  
 
 2. **Automatic Data Analysis**  
    Sistem veri tiplerini otomatik olarak analiz eder:  
@@ -51,36 +53,34 @@ Teknik clustering çıktılarının ötesine geçerek, her segment için **profi
    - Kullanıcı isterse manuel düzenleme yapabilir  
 
 4. **Preprocessing Pipeline**  
-   - Missing value handling  
-   - Encoding (categorical features)  
-   - Normalization / scaling  
-   - Opsiyonel boyut indirgeme (PCA)  
+   - Missing value handling (numeric → median, categorical → mode)  
+   - Label encoding (kategorik özellikler)  
+   - StandardScaler normalizasyonu  
+   - Opsiyonel boyut indirgeme (PCA, kullanıcı bileşen sayısı belirler)  
 
 5. **Clustering Execution**  
-   - Varsayılan algoritma: **K-Means**  
-   - Sistem optimal cluster sayısını önerir (örneğin silhouette score ile)  
-   - Kullanıcı isterse cluster sayısını override edebilir  
+   - Algoritma: **K-Means** (tek desteklenen algoritma)  
+   - Sistem silhouette score'a göre optimal cluster sayısını otomatik belirler  
+   - Kullanıcı k aralığını (min/max) girer  
 
 6. **Cluster Profiling**  
    - Her cluster için özet istatistikler çıkarılır  
    - Genel popülasyona göre fark analizi yapılır  
    - En ayırt edici feature’lar belirlenir  
 
-7. **LLM-Based Interpretation Layer**  
-   - Cluster’lar otomatik isimlendirilir  
-   - Davranışsal profil açıklamaları oluşturulur  
-   - İş birimi için anlamlı içgörüler üretilir  
-   - Aksiyon önerileri sunulur  
+7. **LLM-Based Interpretation Layer (opsiyonel, şu an placeholder)**  
+   - Cluster özetleri yapılandırılmış JSON şemasına uygun şekilde hazırlanır  
+   - LLM bağlandığında üretecekleri: segment adı, profil, davranış analizi, key_insights, recommended_actions, risk_notes, executive_summary, cross_segment_insights  
+   - Kullanıcı opsiyonel bağlam metni (context) girebilir  
 
 8. **Output & Reporting**  
    - Segment bazlı analiz ekranı  
-   - Görselleştirme (2D projection, dağılım grafikleri)  
-   - Excel / JSON rapor export  
-   - Yönetici özeti  
+   - Görselleştirmeler: silhouette grafiği, elbow grafiği, 2D cluster projeksiyonu, cluster boyut grafiği, özellik karşılaştırma, radar grafiği (3+ sayısal özellik varsa)  
+   - Excel ve JSON rapor export  
 
-9. **Feedback Loop**  
-   - Kullanıcı yorumların doğruluğunu değerlendirir  
-   - Sistem gelecekteki iyileştirmeler için feedback toplar  
+9. **Feedback (UI-only)**  
+   - Kullanıcı yorumların kalitesini 1–5 arasında puanlar ve yorum girebilir  
+   - Not: Bu geri bildirim şu an kalıcı olarak saklanmamaktadır  
 
 ---
 
@@ -92,10 +92,10 @@ Teknik clustering çıktılarının ötesine geçerek, her segment için **profi
   Veri temizleme, feature engineering ve preprocessing işlemleri  
 
 - **ML Layer (Clustering Engine)**  
-  K-Means başta olmak üzere clustering algoritmaları  
+  K-Means tabanlı segmentasyon; silhouette + elbow ile optimal k seçimi  
 
-- **Interpretation Layer (LLM Integration)**  
-  Segmentleri iş diline çeviren ve aksiyon önerileri üreten katman  
+- **Interpretation Layer (LLM Integration — placeholder)**  
+  Cluster özetlerini LLM'e gönderilecek formata hazırlar. vLLM HTTP çağrısı kod içinde tanımlı ama yorum satırında tutulmaktadır.  
 
 - **UI Layer (Streamlit)**  
   Kullanıcı etkileşimi, veri yükleme ve sonuç görüntüleme  
@@ -112,17 +112,18 @@ Teknik clustering çıktılarının ötesine geçerek, her segment için **profi
 - Silhouette Score (cluster validation)  
 - Opsiyonel: PCA (dimension reduction)  
 
-### LLM Integration  
-- Cluster interpretation  
-- Segment naming  
-- Behavioral insights generation  
-- Action recommendations  
+### LLM Integration (planned, currently placeholder)  
+- vLLM uyumlu HTTP chat-completions çağrısı için hazır prompt şablonu  
+- Yapılandırılmış JSON çıktı şeması tanımlı  
+- Aktifleştirildiğinde: segment naming, davranış analizi, aksiyon önerileri, risk notları
 
 ### Backend & UI  
 - Python  
 - Pandas / NumPy  
-- Scikit-learn  
+- Scikit-learn (KMeans, PCA, StandardScaler, LabelEncoder)  
+- Plotly (görselleştirmeler)  
 - Streamlit  
+- requests (LLM HTTP çağrısı için)  
 
 ---
 

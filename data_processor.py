@@ -1,22 +1,18 @@
 import pandas as pd
-import numpy as np
 from sklearn.preprocessing import StandardScaler, LabelEncoder
+from sklearn.decomposition import PCA
 
 
 def load_data(uploaded_file):
-    """CSV veya Excel dosyasini yukler."""
     name = uploaded_file.name.lower()
     if name.endswith(".csv"):
-        df = pd.read_csv(uploaded_file)
-    elif name.endswith((".xlsx", ".xls")):
-        df = pd.read_excel(uploaded_file)
-    else:
-        raise ValueError("Desteklenen formatlar: CSV, XLSX, XLS")
-    return df
+        return pd.read_csv(uploaded_file)
+    if name.endswith((".xlsx", ".xls")):
+        return pd.read_excel(uploaded_file)
+    raise ValueError("Desteklenen formatlar: CSV, XLSX, XLS")
 
 
 def analyze_columns(df):
-    """Kolon tiplerini otomatik siniflandirir."""
     analysis = {
         "numeric": [],
         "categorical": [],
@@ -28,7 +24,7 @@ def analyze_columns(df):
         if col.lower() in ("id", "index", "row", "unnamed: 0") or col.lower().endswith("_id"):
             analysis["id_or_useless"].append(col)
             continue
-            
+
         if pd.api.types.is_datetime64_any_dtype(df[col]):
             analysis["datetime"].append(col)
             continue
@@ -63,21 +59,21 @@ def analyze_columns(df):
 
 
 def recommend_features(analysis):
-    """Clustering icin uygun kolonlari onerir."""
     recommended = analysis["numeric"] + analysis["categorical"]
     excluded = analysis["id_or_useless"] + analysis["datetime"]
     return recommended, excluded
 
 
 def preprocess_data(df, selected_features, apply_pca=False, pca_components=2):
-    """Secilen feature'lari preprocess eder."""
     work_df = df[selected_features].copy()
 
     for col in work_df.columns:
         if pd.api.types.is_numeric_dtype(work_df[col]):
             work_df[col] = work_df[col].fillna(work_df[col].median())
         else:
-            work_df[col] = work_df[col].fillna(work_df[col].mode().iloc[0] if not work_df[col].mode().empty else "unknown")
+            mode = work_df[col].mode()
+            fill_value = mode.iloc[0] if not mode.empty else "unknown"
+            work_df[col] = work_df[col].fillna(fill_value)
 
     label_encoders = {}
     categorical_cols = work_df.select_dtypes(include=["object", "category"]).columns
@@ -92,7 +88,6 @@ def preprocess_data(df, selected_features, apply_pca=False, pca_components=2):
 
     pca_model = None
     if apply_pca and scaled_data.shape[1] > pca_components:
-        from sklearn.decomposition import PCA
         pca_model = PCA(n_components=pca_components)
         pca_data = pca_model.fit_transform(scaled_data)
         pca_df = pd.DataFrame(

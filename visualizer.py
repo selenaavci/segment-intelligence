@@ -1,12 +1,10 @@
 import plotly.express as px
 import plotly.graph_objects as go
 import pandas as pd
-import numpy as np
 from sklearn.decomposition import PCA
 
 
 def plot_silhouette_scores(results_df):
-    """K değerleri için silhouette score grafiği."""
     fig = px.line(
         results_df,
         x="k",
@@ -29,7 +27,6 @@ def plot_silhouette_scores(results_df):
 
 
 def plot_elbow(results_df):
-    """Dirsek yöntemi grafiği (inertia)."""
     fig = px.line(
         results_df,
         x="k",
@@ -43,7 +40,6 @@ def plot_elbow(results_df):
 
 
 def plot_2d_clusters(data_df, labels, selected_features):
-    """2D küme dağılım grafiği. Gerekirse PCA uygular."""
     plot_df = data_df.copy()
 
     if data_df.shape[1] > 2:
@@ -73,7 +69,6 @@ def plot_2d_clusters(data_df, labels, selected_features):
 
 
 def plot_cluster_sizes(profiles):
-    """Küme büyüklük dağılımları."""
     data = []
     for cid, p in profiles.items():
         data.append({"Segment": f"Segment {cid}", "Kayıt Sayısı": p["size"], "Yüzde": p["percentage"]})
@@ -93,7 +88,6 @@ def plot_cluster_sizes(profiles):
 
 
 def plot_feature_comparison(profiles, feature_name):
-    """Belirli bir özellik için segmentler arası karşılaştırma."""
     data = []
     for cid, p in profiles.items():
         stats = p["stats"].get(feature_name, {})
@@ -120,7 +114,6 @@ def plot_feature_comparison(profiles, feature_name):
 
 
 def plot_radar_chart(profiles, numeric_features):
-    """Segmentler için radar grafiği."""
     if len(numeric_features) < 3:
         return None
 
